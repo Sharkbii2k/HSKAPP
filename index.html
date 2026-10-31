@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Hệ Thống Học HSK 1-2-3-4</title>
+<style>
+  :root {
+    --bg: #0b1120;
+    --panel: #1e293b;
+    --panel-hover: #283548;
+    --border: #334155;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --primary: #e11d48;
+    --accent: #f59e0b;
+    --success: #10b981;
+    --kaiti: "KaiTi", "STKaiti", "Kaiti SC", "DFKai-SB", "BiauKai", "AR PL UKai CN", "Songti SC", serif;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100dvh; width: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text);
+  }
+  .kaiti {
+    font-family: var(--kaiti);
+    font-weight: 500;
+    letter-spacing: 1px;
+  }
+
+  /* ================= KEYFRAMES HOẠT ẢNH ================= */
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translate3d(36px, 0, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translate3d(-36px, 0, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+  @keyframes cascadeUp {
+    from { opacity: 0; transform: translate3d(0, 14px, 0) scale(0.985); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  }
+  @keyframes popScale {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.28); }
+    75%  { transform: scale(0.92); }
+    100% { transform: scale(1); }
+  }
+  @keyframes pulseWave {
+    0%   { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.65); }
+    70%  { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  }
+  @keyframes shakeWrong {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    50% { transform: translateX(8px); }
+    75% { transform: translateX(-5px); }
+  }
+
+  .anim-forward { animation: slideInRight 0.32s var(--ease-out) forwards; }
+  .anim-back    { animation: slideInLeft 0.32s var(--ease-out) forwards; }
+  .stagger-item {
+    opacity: 0;
+    animation: cascadeUp 0.36s var(--ease-out) forwards;
+    animation-delay: calc(var(--i, 0) * 28ms);
+  }
+  .pop-anim   { animation: popScale 0.38s var(--ease-spring); }
+  .pulse-anim { animation: pulseWave 0.8s ease-out; border-color: var(--accent) !important; }
+  .shake-anim { animation: shakeWrong 0.35s ease-in-out; }
+
+  /* ================= KHUNG BỐ CỤC CỐ ĐỊNH ================= */
+  .app-shell {
+    max-width: 760px; height: 100dvh; margin: 0 auto;
+    display: flex; flex-direction: column;
+    border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+    background: var(--bg); position: relative;
+  }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: rgba(30, 41, 59, 0.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border); flex-shrink: 0; gap: 10px; z-index: 10;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .back-btn {
+    background: #0f172a; color: var(--text); border: 1px solid var(--border);
+    padding: 7px 12px; border-radius: 9px; font-weight: 600; font-size: 0.84rem;
+    cursor: pointer; white-space: nowrap;
+    transition: transform 0.18s var(--ease-spring), background 0.18s, border-color 0.18s;
+  }
+  .back-btn:hover { background: var(--panel-hover); border-color: var(--accent); }
+  .back-btn:active { transform: scale(0.91); }
+  .screen-title {
+    font-size: 0.98rem; font-weight: 800; color: #fff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .subbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 16px; background: #111a2e; border-bottom: 1px solid var(--border);
+    gap: 8px; flex-shrink: 0; flex-wrap: wrap;
+    transition: all 0.25s var(--ease-out);
+  }
+
+  .viewport {
+    flex: 1; overflow-y: auto; overflow-x: hidden; padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 10px;
+    scroll-behavior: smooth;
+  }
+
+  /* ================= THẺ ĐIỀU HƯỚNG (MÀN 1, 2, 3) ================= */
+  .nav-card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 13px; padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; gap: 12px; position: relative; overflow: hidden;
+    transition: transform 0.22s var(--ease-spring), background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  }
+  .nav-card:hover {
+    background: var(--panel-hover); border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.45);
+  }
+  .nav-card:active { transform: scale(0.975); }
+  .nav-card-left { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1; }
+  .lvl-badge {
+    width: 54px; height: 54px; border-radius: 13px;
+    background: linear-gradient(135deg, #e11d48, #be123c); color: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 0.82rem; flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.35);
+    transition: transform 0.25s var(--ease-spring);
+  }
+  .nav-card:hover .lvl-badge { transform: scale(1.07) rotate(-2deg); }
+  .lvl-badge span.zh { font-family: var(--kaiti); font-size: 1.2rem; font-weight: normal; }
+  .nav-title { font-size: 1.02rem; font-weight: 700; color: #fff; margin-bottom: 3px; }
+  .nav-sub { font-size: 0.8rem; color: var(--muted); }
+  .arrow-box {
+    color: var(--accent); font-weight: 800; font-size: 1.05rem;
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  .arrow-icon { transition: transform 0.22s var(--ease-spring); display: inline-block; }
+  .nav-card:hover .arrow-icon { transform: translateX(5px); }
+
+  /* Thanh tiến độ nhỏ trên thẻ */
+  .prog-wrap {
+    width: 72px; text-align: right;
+  }
+  .count-pill {
+    background: #0b1120; border: 1px solid var(--border);
+    color: var(--muted); font-size: 0.73rem; padding: 2px 8px; border-radius: 99px;
+    display: inline-block; margin-bottom: 4px;
+  }
+  .prog-bar {
+    height: 4px; width: 100%; background: #0b1120; border-radius: 99px; overflow: hidden;
+  }
+  .prog-fill {
+    height: 100%; background: var(--success); border-radius: 99px;
+    transition: width 0.5s var(--ease-out);
+  }
+
+  /* ================= DÒNG TỪ VỰNG / CÂU MẪU GỌN ================= */
+  .item-row {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 11px; padding: 10px 14px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    transition: transform 0.2s var(--ease-out), background 0.25s, border-color 0.25s;
+  }
+  .item-row:hover { border-color: #475569; transform: translateX(3px); }
+  .item-row.learned {
+    border-color: rgba(16, 185, 129, 0.65);
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.12), rgba(30, 41, 59, 0.95));
+  }
+  .row-main { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; min-width: 0; flex: 1; }
+  .row-stt { font-size: 0.78rem; color: var(--muted); min-width: 22px; }
+  .row-hanzi { font-size: 1.8rem; color: #fff; line-height: 1.2; cursor: pointer; transition: color 0.15s; }
+  .row-hanzi:hover { color: var(--accent); }
+  .row-pinyin { font-size: 0.95rem; color: var(--accent); font-weight: 600; transition: opacity 0.2s; }
+  .row-meaning { font-size: 0.9rem; color: #cbd5e1; transition: opacity 0.2s; }
+  .row-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  /* ================= NÚT BẤM ĐÀN HỒI ================= */
+  .btn {
+    background: var(--panel-hover); color: #fff; border: 1px solid var(--border);
+    padding: 6px 11px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+    transition: transform 0.18s var(--ease-spring), background 0.18s, border-color 0.18s, box-shadow 0.18s;
+  }
+  .btn:hover { border-color: #64748b; }
+  .btn:active { transform: scale(0.88); }
+  .btn.active, .btn-primary {
+    background: var(--primary); border-color: var(--primary);
+    box-shadow: 0 3px 10px rgba(225, 29, 72, 0.35);
+  }
+  .btn-accent { background: var(--accent); color: #000; border-color: var(--accent); }
+  .btn-success { background: var(--success); border-color: var(--success); }
+
+  /* ================= FLASHCARD 3D THẬT (PERSPECTIVE FLIP) ================= */
+  .fc-container {
+    flex: 1; display: flex; flex-direction: column; justify-content: center;
+    align-items: center; gap: 16px; padding: 8px 0;
+  }
+  .fc-scene {
+    width: 100%; max-width: 460px; height: 260px;
+    perspective: 1100px; cursor: pointer; user-select: none;
+  }
+  .fc-card-3d {
+    width: 100%; height: 100%; position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.56s var(--ease-spring);
+  }
+  .fc-card-3d.is-flipped {
+    transform: rotateY(180deg);
+  }
+  .fc-face {
+    position: absolute; inset: 0;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    background: linear-gradient(145deg, #1e293b, #151e2e);
+    border: 2px solid var(--border); border-radius: 18px;
+    padding: 24px; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; text-align: center;
+    box-shadow: 0 14px 30px -8px rgba(0, 0, 0, 0.55);
+    transition: border-color 0.25s;
+  }
+  .fc-scene:hover .fc-face { border-color: var(--accent); }
+  .fc-face-back {
+    transform: rotateY(180deg);
+    background: linear-gradient(145deg, #17253b, #0f172a);
+    border-color: var(--accent);
+  }
+  .fc-zh { font-size: 4rem; color: #fff; margin-bottom: 8px; line-height: 1.2; }
+  .fc-py { font-size: 1.45rem; color: var(--accent); font-weight: 700; margin-bottom: 8px; }
+  .fc-vi { font-size: 1.1rem; color: #e2e8f0; line-height: 1.4; }
+  .fc-hint { font-size: 0.78rem; color: var(--muted); margin-top: 10px; opacity: 0.8; }
+
+  /* ================= ACCORDION NGỮ PHÁP TRƯỢT MƯỢT ================= */
+  .acc-item {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 11px; overflow: hidden; flex-shrink: 0;
+    transition: border-color 0.25s, box-shadow 0.25s;
+  }
+  .acc-item.open {
+    border-color: var(--accent);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  }
+  .acc-header {
+    padding: 13px 15px; display: flex; justify-content: space-between;
+    align-items: center; cursor: pointer; font-weight: 700; font-size: 0.94rem;
+    transition: background 0.2s;
+  }
+  .acc-header:hover { background: var(--panel-hover); }
+  .acc-chevron {
+    transition: transform 0.3s var(--ease-spring);
+    color: var(--accent); font-size: 0.85rem;
+  }
+  .acc-item.open .acc-chevron { transform: rotate(180deg); }
+
+  /* Hiệu ứng trượt mở bằng CSS Grid 0fr -> 1fr */
+  .acc-grid {
+    display: grid; grid-template-rows: 0fr;
+    transition: grid-template-rows 0.32s var(--ease-out);
+    background: #121b2e;
+  }
+  .acc-item.open .acc-grid { grid-template-rows: 1fr; }
+  .acc-inner { overflow: hidden; }
+  .acc-body {
+    padding: 12px 15px; border-top: 1px solid var(--border);
+    font-size: 0.88rem;
+  }
+  .formula-box {
+    background: #0b1120; color: var(--accent); padding: 8px 12px;
+    border-radius: 7px; font-weight: 700; margin-bottom: 8px;
+    border-left: 3px solid var(--primary);
+  }
+
+  .search-input {
+    flex: 1; background: #0b1120; border: 1px solid var(--border);
+    color: #fff; padding: 8px 12px; border-radius: 9px; font-size: 0.85rem; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+  }
+
+  /* ================= MODAL MỜ KÍNH & PHÓNG MƯỢT ================= */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(6, 10, 20, 0.78);
+    backdrop-filter: blur(6px); z-index: 99;
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s var(--ease-out);
+  }
+  .modal-backdrop.show { opacity: 1; pointer-events: auto; }
+  .modal-box {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    width: 100%; max-width: 620px; padding: 18px; max-height: 90dvh;
+    display: flex; flex-direction: column; gap: 10px;
+    transform: scale(0.92) translateY(12px);
+    transition: transform 0.3s var(--ease-spring);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+  }
+  .modal-backdrop.show .modal-box { transform: scale(1) translateY(0); }
+  textarea.paste-area {
+    width: 100%; height: 180px; background: #0b1120; color: #fff;
+    border: 1px solid var(--border); border-radius: 9px; padding: 10px;
+    font-size: 0.8rem; font-family: monospace; resize: none; outline: none;
+  }
+  textarea.paste-area:focus { border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="back-btn" id="btnBack" style="display:none" onclick="goBack()">← Quay lại</button>
+      <div class="screen-title" id="screenTitle">HỆ THỐNG HỌC HSK 1–2–3–4</div>
+    </div>
+    <div style="display:flex; gap:6px; flex-shrink:0;">
+      <button class="btn btn-accent" onclick="openModal()">⚡ Nạp PDF</button>
+      <button class="btn" onclick="exportJSON()" title="Xuất dữ liệu">💾</button>
+    </div>
+  </header>
+
+  <div class="subbar" id="subBar" style="display:none"></div>
+
+  <main class="viewport" id="mainViewport"></main>
+</div>
+
+<!-- Modal Nạp toàn bộ 87 trang PDF -->
+<div class="modal-backdrop" id="importModal">
+  <div class="modal-box">
+    <div style="font-weight:800; font-size:1rem;">⚡ Nạp toàn bộ 87 trang PDF vào App</div>
+    <div style="font-size:0.82rem; color:var(--muted); line-height:1.45;">
+      1. Mở file PDF <b>TỔNG HỢP TÀI LIỆU & LỘ TRÌNH HỌC HSK 1-2-3-4</b>.<br>
+      2. Nhấn <b>Ctrl + A</b> rồi <b>Ctrl + C</b> để sao chép toàn bộ 87 trang.<br>
+      3. Dán (<b>Ctrl + V</b>) vào ô dưới đây và bấm <b>Phân tích & Lưu</b>.
+    </div>
+    <textarea id="pdfInput" class="paste-area" placeholder="Dán toàn bộ nội dung Ctrl+A từ file PDF vào đây..."></textarea>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <label class="btn" style="cursor:pointer;">
+        📂 Nạp từ file .JSON
+        <input type="file" accept=".json" style="display:none" onchange="importJSON(event)">
+      </label>
+      <div style="display:flex; gap:8px;">
+        <button class="btn" onclick="closeModal()">Đóng</button>
+        <button class="btn btn-primary" onclick="parsePDFContent()">🚀 Phân tích & Lưu</button>
+      </div>
+    </div>
+    <div id="importMsg" style="font-size:0.82rem; color:var(--success); font-weight:600;"></div>
+  </div>
+</div>
+
+<script>
+// ================= THÔNG TIN CẤU TRÚC 4 CẤP ĐỘ TỪ TÀI LIỆU =================
+const HSK_META = {
+  1: {
+    name: "HSK 1", zh: "一级", subtitle: "Nền tảng Pinyin & Sơ cấp",
+    desc: "150 từ (+6 bổ sung) • 15 Chủ đề • 12 Ngữ pháp • 30 Câu • 4 Tuần",
+    exam: "40 câu (~40 phút): Nghe 20 câu + Đọc 20 câu (Đề thi có Pinyin kèm, không thi Viết). Điểm đạt: 120/200.",
+    weeks: [
+      {w: "Chương 0 — Pinyin & Biến điệu", d: "4 thanh điệu (ā, á, ǎ, à). Biến điệu 不 (trước thanh 4 đổi thành bú: 不是 bú shì). Biến điệu 一 (trước thanh 4 thành yí: 一个; trước thanh 1/2/3 thành yì: 一本书). Hai thanh 3 liền nhau đổi thanh đầu thành thanh 2 (你好 ní hǎo). Sau j/q/x/y bỏ hai chấm trên ü (去 qù)."},
+      {w: "Tuần 1 — Pinyin & 30 từ đầu", d: "Ngày 1–4: Luyện 21 phụ âm, 6 nguyên âm, 4 thanh điệu. Ngày 5–7: Học Đại từ (7), Số đếm (10), Lời chào (6) và 7 từ cơ bản (是/有/在/不/很/的/我)."},
+      {w: "Tuần 2 — Thời gian, Gia đình, Động từ", d: "Ngày 8–9: Thời gian (14 từ). Ngày 10–11: Gia đình & Người (12 từ) + sở hữu 的. Ngày 12–14: 15 Động từ cơ bản + câu hỏi 吗, phủ định 不."},
+      {w: "Tuần 3 — Địa điểm, Đồ vật, Tính từ", d: "Ngày 15–16: Địa điểm (7) + Vị trí (5). Ngày 17–18: Đồ vật (18) + Thực phẩm (8). Ngày 19–21: Tính từ (9), Lượng từ (6), Từ để hỏi (8)."},
+      {w: "Tuần 4 — Tổng ôn & Luyện đề", d: "Ngày 22–28: Mỗi ngày làm 1 đề mẫu 40 phút, ôn 150 từ vựng, 12 điểm ngữ pháp và phản xạ 30 câu giao tiếp."}
+    ],
+    tips: "Tuần 1 chỉ tập trung Pinyin & thanh điệu. Học từ theo cặp đối lập (大↔小, 多↔少, 冷↔热, 上↔下). Tận dụng tối đa Pinyin đi kèm trong đề thi HSK 1."
+  },
+  2: {
+    name: "HSK 2", zh: "二级", subtitle: "Giao tiếp cơ bản",
+    desc: "151 từ mới (+11 bổ sung) • 12 Chủ đề • 15 Ngữ pháp • 30 Câu • 4 Tuần",
+    exam: "60 câu (~55 phút): Nghe 35 câu (~20 phút) + Đọc 25 câu (~25 phút). Điểm đạt: 120/200.",
+    weeks: [
+      {w: "Tuần 1 — Ôn HSK 1 + Người, Thời gian, Số", d: "Ôn 150 từ HSK 1. Học Đại từ & Con người (15 từ), Thời gian & Tần suất (12 từ), Số đếm trăm/nghìn & Lượng từ (7 từ)."},
+      {w: "Tuần 2 — Động từ & Tính từ cốt lõi", d: "Học 37 Động từ thông dụng (sinh hoạt, thể thao, cảm nghĩ) và 21 Tính từ mô tả (nhanh/chậm, đắt/rẻ, màu sắc, thời tiết)."},
+      {w: "Tuần 3 — Địa điểm, Đồ vật, Câu so sánh", d: "Học Địa điểm & Hướng đi (11 từ), Đồ vật & Giao thông (15 từ), Thực phẩm (7 từ), Cơ thể (5 từ). Ngữ pháp: 比, 得, 着, 从…到…"},
+      {w: "Tuần 4 — Luyện đề & Tổng ôn", d: "Làm đề thi mẫu 55 phút/đề. Ôn kỹ 151 từ mới, phân biệt 再/又/还 và luyện nói trôi chảy 30 câu mẫu."}
+    ],
+    tips: "Học từ theo cụm (ví dụ: 帮助我 thay vì chỉ học 帮助). Chú ý nghe kỹ các con số (giờ giấc, giá tiền, ngày tháng) vì rất dễ nhầm thanh 2 và thanh 3."
+  },
+  3: {
+    name: "HSK 3", zh: "三级", subtitle: "Trung cấp sơ bộ (Có phần Viết)",
+    desc: "300 từ mới (Tích lũy 600 từ) • 14 Chủ đề • 15 Ngữ pháp • 30 Câu • 6 Tuần",
+    exam: "80 câu (~90 phút): Nghe 40 câu + Đọc 30 câu + Viết 10 câu. KHÔNG còn Pinyin kèm. Điểm đạt: 180/300.",
+    weeks: [
+      {w: "Tuần 1 — Ôn HSK 2 + Người & Thời gian (37 từ)", d: "Ôn 300 từ HSK 1–2. Học Gia đình & Con người (9 từ), Thời gian & Lịch (28 từ). Bắt đầu tập viết 10 chữ Hán mỗi ngày."},
+      {w: "Tuần 2 — Địa điểm, Ẩm thực, Trang phục, Sức khỏe (53 từ)", d: "Học Địa điểm (22 từ), Thực phẩm (10 từ), Trang phục (6 từ), Cơ thể & Sức khỏe (15 từ)."},
+      {w: "Tuần 3 — Động từ tâm lý (33 từ) & Câu 把 / 被", d: "Học 33 động từ giao tiếp/tâm lý. Luyện chuyên sâu câu chủ động 把 và câu bị động 被."},
+      {w: "Tuần 4 — Động từ hành động (46 từ) & Tính từ (32 từ)", d: "Học 46 động từ đời sống, 4 từ giao thông, 32 tính từ và 10 từ thiên nhiên. Ngữ pháp: 越…越…"},
+      {w: "Tuần 5 — Giáo dục (23), Đồ vật (36), Từ nối (26)", d: "Học từ vựng công việc, trường học, lượng từ và các cấu trúc nối câu phức (不但…而且, 如果…就, 一边…一边)."},
+      {w: "Tuần 6 — Luyện đề 3 kỹ năng Nghe - Đọc - Viết", d: "Làm đề 90 phút. Luyện sắp xếp từ thành câu và viết chữ Hán theo Pinyin cho phần thi 书写 (Viết)."}
+    ],
+    tips: "Từ HSK 3 đề thi bỏ hoàn toàn Pinyin, bắt buộc phải luyện đọc mặt chữ Hán và tập viết tay 10–15 chữ/ngày. Phân biệt kỹ 3 trợ từ 的 / 地 / 得."
+  },
+  4: {
+    name: "HSK 4", zh: "四级", subtitle: "Trung cấp cao (CEFR B2)",
+    desc: "600 từ mới (Tích lũy 1200 từ) • 18 Chủ đề • 15 Ngữ pháp • 30 Câu • 8 Tuần",
+    exam: "100 câu (~105 phút): Nghe 45 câu + Đọc 40 câu + Viết 15 câu (Sắp xếp câu & Đặt câu theo tranh). Điểm đạt: 180/300.",
+    weeks: [
+      {w: "Tuần 1 — Gia đình, Thời gian, Địa điểm (42 từ)", d: "Học Gia đình (11 từ), Thời gian (13 từ), Địa điểm (18 từ) và Cơ thể & Sức khỏe (8 từ)."},
+      {w: "Tuần 2 — Thực phẩm, Trang phục, Cảm xúc (50 từ)", d: "Học Thực phẩm (20 từ, đủ 5 vị 酸甜苦辣咸), Trang phục (2 từ) và Cảm xúc & Tâm trạng (28 từ)."},
+      {w: "Tuần 3 — Động từ tâm lý & Giao tiếp (48 từ)", d: "Học 48 động từ biểu đạt quan điểm, thương lượng, giải thích. Ngữ pháp: 不仅…而且, 即使…也, 既然…就, 无论…都."},
+      {w: "Tuần 4 — Động từ hành động & Đời sống (146 từ)", d: "Nhóm lớn nhất HSK 4: chia 3 chặng (mỗi chặng ~50 từ) kết hợp câu sai khiến 使/让/叫."},
+      {w: "Tuần 5 — Tính từ mô tả (66 từ) & Giáo dục (15 từ)", d: "Học 66 tính từ đánh giá tính cách/sự vật và 15 từ Giáo dục & Tri thức. Ngữ pháp: 对于/关于, 由于."},
+      {w: "Tuần 6 — Kinh doanh (28), Xã hội (11), Công nghệ (9), Du lịch (8), Thiên nhiên (13)", d: "Mở rộng từ vựng chuyên đề công sở, phỏng vấn, pháp luật, internet và khí hậu."},
+      {w: "Tuần 7 — Đồ vật & Lượng từ (62) + Từ chức năng (94)", d: "Làm chủ 94 hư từ/liên từ nâng cao (之所以…是因为, 随着, 竟然, 千万, 值得/适合/符合)."},
+      {w: "Tuần 8 — Tổng ôn 1.200 từ & Luyện đề 105 phút", d: "Giải đề sát giờ thi thật (Nghe 40p, Đọc 40p, Viết 25p). Luyện viết câu hoàn chỉnh và đoạn văn ngắn."}
+    ],
+    tips: "Học theo cụm cố định (collocation) như 符合条件, 养成习惯, 引起注意 và luyện đọc nhanh đoạn văn 300 chữ trong 3 phút."
+  }
+};
+
+// ================= DỮ LIỆU KHỞI TẠO MẶC ĐỊNH =================
+const INITIAL_DATA = {
+  vocab: [
+    {level:1, topic:"3.1 Đại từ", stt:1, hanzi:"我", pinyin:"wǒ", meaning:"tôi; mình; tớ"},
+    {level:1, topic:"3.1 Đại từ", stt:2, hanzi:"你", pinyin:"nǐ", meaning:"bạn; ngươi; cậu"},
+    {level:1, topic:"3.1 Đại từ", stt:3, hanzi:"他", pinyin:"tā", meaning:"anh ấy; ông ấy (nam)"},
+    {level:1, topic:"3.1 Đại từ", stt:4, hanzi:"她", pinyin:"tā", meaning:"cô ấy; bà ấy (nữ)"},
+    {level:1, topic:"3.1 Đại từ", stt:5, hanzi:"我们", pinyin:"wǒmen", meaning:"chúng tôi; chúng mình"},
+    {level:1, topic:"3.1 Đại từ", stt:6, hanzi:"这", pinyin:"zhè", meaning:"này; đây; cái này"},
+    {level:1, topic:"3.1 Đại từ", stt:7, hanzi:"那", pinyin:"nà", meaning:"kia; đó; cái đó"},
+    {level:1, topic:"3.2 Số đếm", stt:1, hanzi:"一", pinyin:"yī", meaning:"một"},
+    {level:1, topic:"3.2 Số đếm", stt:2, hanzi:"二", pinyin:"èr", meaning:"hai"},
+    {level:1, topic:"3.2 Số đếm", stt:3, hanzi:"三", pinyin:"sān", meaning:"ba"},
+    {level:1, topic:"3.2 Số đếm", stt:4, hanzi:"四", pinyin:"sì", meaning:"bốn"},
+    {level:1, topic:"3.2 Số đếm", stt:5, hanzi:"五", pinyin:"wǔ", meaning:"năm"},
+    {level:1, topic:"3.2 Số đếm", stt:6, hanzi:"六", pinyin:"liù", meaning:"sáu"},
+    {level:1, topic:"3.2 Số đếm", stt:7, hanzi:"七", pinyin:"qī", meaning:"bảy"},
+    {level:1, topic:"3.2 Số đếm", stt:8, hanzi:"八", pinyin:"bā", meaning:"tám"},
+    {level:1, topic:"3.2 Số đếm", stt:9, hanzi:"九", pinyin:"jiǔ", meaning:"chín"},
+    {level:1, topic:"3.2 Số đếm", stt:10, hanzi:"十", pinyin:"shí", meaning:"mười"},
+    {level:1, topic:"3.3 Thời gian & Lịch", stt:1, hanzi:"今天", pinyin:"jīntiān", meaning:"hôm nay"},
+    {level:1, topic:"3.3 Thời gian & Lịch", stt:2, hanzi:"明天", pinyin:"míngtiān", meaning:"ngày mai"},
+    {level:1, topic:"3.3 Thời gian & Lịch", stt:3, hanzi:"昨天", pinyin:"zuótiān", meaning:"hôm qua"},
+    {level:1, topic:"3.3 Thời gian & Lịch", stt:4, hanzi:"现在", pinyin:"xiànzài", meaning:"bây giờ; hiện tại"},
+    {level:1, topic:"3.4 Gia đình & Con người", stt:1, hanzi:"爸爸", pinyin:"bàba", meaning:"bố; ba; cha"},
+    {level:1, topic:"3.4 Gia đình & Con người", stt:2, hanzi:"妈妈", pinyin:"māma", meaning:"mẹ; má"},
+    {level:1, topic:"3.4 Gia đình & Con người", stt:3, hanzi:"老师", pinyin:"lǎoshī", meaning:"giáo viên; thầy/cô giáo"},
+    {level:1, topic:"3.4 Gia đình & Con người", stt:4, hanzi:"朋友", pinyin:"péngyou", meaning:"bạn bè; người bạn"},
+    {level:1, topic:"3.7 Động từ thông dụng", stt:1, hanzi:"喜欢", pinyin:"xǐhuan", meaning:"thích; yêu thích"},
+    {level:1, topic:"3.7 Động từ thông dụng", stt:2, hanzi:"学习", pinyin:"xuéxí", meaning:"học tập; học"},
+    {level:1, topic:"3.7 Động từ thông dụng", stt:3, hanzi:"工作", pinyin:"gōngzuò", meaning:"làm việc; công việc"},
+    {level:2, topic:"3.1 Đại từ & Con người", stt:1, hanzi:"服务员", pinyin:"fúwùyuán", meaning:"nhân viên phục vụ"},
+    {level:2, topic:"3.1 Đại từ & Con người", stt:2, hanzi:"大家", pinyin:"dàjiā", meaning:"mọi người"},
+    {level:2, topic:"3.2 Thời gian & Tần suất", stt:1, hanzi:"已经", pinyin:"yǐjīng", meaning:"đã (rồi)"},
+    {level:2, topic:"3.2 Thời gian & Tần suất", stt:2, hanzi:"正在", pinyin:"zhèngzài", meaning:"đang (làm gì)"},
+    {level:2, topic:"3.7 Động từ thông dụng", stt:1, hanzi:"起床", pinyin:"qǐchuáng", meaning:"thức dậy; ngủ dậy"},
+    {level:2, topic:"3.7 Động từ thông dụng", stt:2, hanzi:"上班", pinyin:"shàngbān", meaning:"đi làm; đi làm việc"},
+    {level:2, topic:"3.7 Động từ thông dụng", stt:3, hanzi:"准备", pinyin:"zhǔnbèi", meaning:"chuẩn bị"},
+    {level:2, topic:"3.8 Tính từ & Mô tả", stt:1, hanzi:"便宜", pinyin:"piányi", meaning:"rẻ; rẻ tiền"},
+    {level:3, topic:"3.1 Gia đình & Con người", stt:1, hanzi:"同事", pinyin:"tóngshì", meaning:"đồng nghiệp"},
+    {level:3, topic:"3.2 Thời gian & Lịch", stt:1, hanzi:"经常", pinyin:"jīngcháng", meaning:"thường xuyên"},
+    {level:3, topic:"3.2 Thời gian & Lịch", stt:2, hanzi:"终于", pinyin:"zhōngyú", meaning:"cuối cùng; rốt cuộc"},
+    {level:3, topic:"3.7 Động từ giao tiếp & tâm lý", stt:1, hanzi:"决定", pinyin:"juédìng", meaning:"quyết định"},
+    {level:3, topic:"3.7 Động từ giao tiếp & tâm lý", stt:2, hanzi:"关心", pinyin:"guānxīn", meaning:"quan tâm"},
+    {level:3, topic:"3.8 Động từ hành động & đời sống", stt:1, hanzi:"参加", pinyin:"cānjiā", meaning:"tham gia"},
+    {level:3, topic:"3.8 Động từ hành động & đời sống", stt:2, hanzi:"提高", pinyin:"tígāo", meaning:"nâng cao; cải thiện"},
+    {level:4, topic:"3.1 Gia đình & Con người", stt:1, hanzi:"友谊", pinyin:"yǒuyì", meaning:"tình bạn; hữu nghị"},
+    {level:4, topic:"3.7 Động từ tâm lý & giao tiếp", stt:1, hanzi:"保证", pinyin:"bǎozhèng", meaning:"đảm bảo; cam kết"},
+    {level:4, topic:"3.7 Động từ tâm lý & giao tiếp", stt:2, hanzi:"建议", pinyin:"jiànyì", meaning:"đề xuất; kiến nghị"},
+    {level:4, topic:"3.8 Động từ hành động & đời sống", stt:1, hanzi:"安排", pinyin:"ānpái", meaning:"sắp xếp; an bài"},
+    {level:4, topic:"3.8 Động từ hành động & đời sống", stt:2, hanzi:"坚持", pinyin:"jiānchí", meaning:"kiên trì; giữ vững"},
+    {level:4, topic:"3.9 Tính từ & Mô tả", stt:1, hanzi:"流利", pinyin:"liúlì", meaning:"trôi chảy; lưu loát"}
+  ],
+  grammar: [
+    {level:1, id:"4.1", title:"Câu “是” (là) — Khẳng định danh từ", formula:"Chủ ngữ + 是 + Danh từ", example:"我是学生。 / Wǒ shì xuésheng. — Tôi là học sinh. 他不是老师。 / Tā bú shì lǎoshī. — Anh ấy không phải giáo viên.", explanation:"“是” = là. Phủ định dùng “不是” (bú shì — lưu ý “不” đổi sang thanh 2 trước “是” thanh 4)."},
+    {level:1, id:"4.2", title:"“有” (có) & “在” (ở) — Sở hữu & Vị trí", formula:"S + 有 + O (có gì); S + 在 + Nơi (ở đâu)", example:"我有一本书。 / Wǒ yǒu yì běn shū. — Tôi có một cuốn sách. 我在学校。 / Wǒ zài xuéxiào. — Tôi ở trường.", explanation:"“有” = có (sở hữu/tồn tại). “在” = ở tại (vị trí)."},
+    {level:1, id:"4.3", title:"“的” (của) — Sở hữu & Tính từ bổ nghĩa", formula:"S + 的 + Danh từ; Tính từ + 的 + Danh từ", example:"这是我的书。 / Zhè shì wǒ de shū. — Đây là sách của tôi.", explanation:"“的” nối chủ sở hữu với vật sở hữu, hoặc tính từ với danh từ."},
+    {level:2, id:"4.1", title:"正在…呢 — Hành động đang diễn ra", formula:"Chủ ngữ + 正在 + V + (呢)", example:"我正在吃饭呢。 / Wǒ zhèngzài chīfàn ne. — Tôi đang ăn cơm mà.", explanation:"“正在” nhấn mạnh hành động đang xảy ra ngay lúc nói."},
+    {level:2, id:"4.4", title:"比 — Câu so sánh hơn", formula:"A + 比 + B + Tính từ", example:"哥哥比我高。 / Gēge bǐ wǒ gāo. — Anh trai cao hơn tôi.", explanation:"Độ chênh lệch thêm sau tính từ: 高一点 / 高得多."},
+    {level:3, id:"4.1", title:"Câu “把” (把字句) — Đem tân ngữ ra trước", formula:"S + 把 + O + V + Bổ ngữ", example:"我把书放在桌子上了。 / Wǒ bǎ shū fàng zài zhuōzi shàng le. — Tôi đã đặt sách lên bàn rồi.", explanation:"Dùng khi hành động làm thay đổi trạng thái hoặc vị trí của tân ngữ."},
+    {level:3, id:"4.2", title:"Câu bị động “被” (被字句)", formula:"O + 被 + S + V (+ bổ ngữ)", example:"我的杯子被他打碎了。 / Wǒ de bēizi bèi tā dǎ suì le. — Cốc của tôi bị anh ấy làm vỡ.", explanation:"Nhấn mạnh đối tượng chịu tác động."},
+    {level:4, id:"4.1", title:"不仅…而且… — Không những… mà còn…", formula:"不仅 + A, 而且/还/也 + B", example:"他不仅会说英语，而且会说法语和日语。 / Tā bùjǐn huì shuō Yīngyǔ, érqiě huì shuō Fǎyǔ hé Rìyǔ.", explanation:"Nhấn mạnh A, bổ sung B mạnh hơn."},
+    {level:4, id:"4.5", title:"只要…就… — Chỉ cần… thì… (điều kiện đủ)", formula:"只要 + A (điều kiện), 就 + B (kết quả)", example:"只要你努力，就一定能成功。 / Zhǐyào nǐ nǔlì, jiù yídìng néng chénggōng. — Chỉ cần bạn cố gắng thì nhất định sẽ thành công.", explanation:"Khác với 只有…才 (điều kiện cần)."}
+  ],
+  sentences: [
+    {level:1, stt:1, hanzi:"你好！", pinyin:"Nǐ hǎo!", meaning:"Xin chào!"},
+    {level:1, stt:2, hanzi:"你好吗？我很好，谢谢。", pinyin:"Nǐ hǎo ma? Wǒ hěn hǎo, xièxie.", meaning:"Bạn khỏe không? Tôi khỏe, cảm ơn."},
+    {level:1, stt:3, hanzi:"你叫什么名字？", pinyin:"Nǐ jiào shénme míngzi?", meaning:"Bạn tên là gì?"},
+    {level:1, stt:4, hanzi:"我叫李明，我是越南人。", pinyin:"Wǒ jiào Lǐ Míng, wǒ shì Yuènán rén.", meaning:"Tôi tên là Lý Minh, tôi là người Việt Nam."},
+    {level:2, stt:7, hanzi:"你每天几点起床？", pinyin:"Nǐ měitiān jǐ diǎn qǐchuáng?", meaning:"Mỗi ngày bạn mấy giờ dậy?"},
+    {level:2, stt:8, hanzi:"我每天七点起床，八点上班。", pinyin:"Wǒ měitiān qī diǎn qǐchuáng, bā diǎn shàngbān.", meaning:"Mỗi ngày tôi bảy giờ dậy, tám giờ đi làm."},
+    {level:3, stt:5, hanzi:"请把窗户关上，外面刮风了。", pinyin:"Qǐng bǎ chuānghu guānshàng, wàimiàn guāfēng le.", meaning:"Làm ơn đóng cửa sổ lại, bên ngoài gió rồi."},
+    {level:3, stt:9, hanzi:"我越学习汉语，越觉得有意思。", pinyin:"Wǒ yuè xuéxí Hànyǔ, yuè juéde yǒu yìsi.", meaning:"Tôi càng học tiếng Trung càng thấy thú vị."},
+    {level:4, stt:3, hanzi:"无论多忙，你都要注意身体，别太累了。", pinyin:"Wúlùn duō máng, nǐ dōu yào zhùyì shēntǐ, bié tài lèi le.", meaning:"Dù bận đến đâu, bạn cũng phải chú ý sức khỏe, đừng mệt quá."},
+    {level:4, stt:4, hanzi:"只要坚持下去，就一定能成功。", pinyin:"Zhǐyào jiānchí xiàqu, jiù yídìng néng chénggōng.", meaning:"Chỉ cần kiên trì tiếp tục, nhất định sẽ thành công."}
+  ]
+};
+
+// ================= QUẢN LÝ TRẠNG THÁI & HOẠT ẢNH CHUYỂN TRANG =================
+let db = JSON.parse(localStorage.getItem('HSK_DRILL_DB_V2')) || INITIAL_DATA;
+let learned = JSON.parse(localStorage.getItem('HSK_DRILL_LEARNED_V2')) || {};
+
+let navState = {
+  screen: 'LEVELS',
+  level: 1,
+  topic: '',
+  mode: 'list',
+  fcIndex: 0,
+  fcFlipped: false,
+  showPinyin: true,
+  showMeaning: true,
+  search: '',
+  openAccId: '4.1'
+};
+
+function saveDB() {
+  localStorage.setItem('HSK_DRILL_DB_V2', JSON.stringify(db));
+  localStorage.setItem('HSK_DRILL_LEARNED_V2', JSON.stringify(learned));
+}
+
+function speak(text, btnEl) {
+  if (btnEl) {
+    btnEl.classList.remove('pulse-anim');
+    void btnEl.offsetWidth;
+    btnEl.classList.add('pulse-anim');
+  }
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'zh-CN';
+  u.rate = 0.88;
+  window.speechSynthesis.speak(u);
+}
+
+// Chuyển màn hình kèm hiệu ứng trượt hướng (forward = phải sang, back = trái sang)
+function navigateTo(screen, patch = {}, dir = 'forward') {
+  Object.assign(navState, patch);
+  navState.screen = screen;
+  render(dir);
+}
+
+function goBack() {
+  if (navState.screen === 'VOCAB_DETAIL') {
+    navigateTo('TOPICS', { mode: 'list' }, 'back');
+  } else if (['TOPICS', 'GRAMMAR', 'SENTENCES', 'ROADMAP'].includes(navState.screen)) {
+    navigateTo('MODULES', { mode: 'list' }, 'back');
+  } else if (navState.screen === 'MODULES') {
+    navigateTo('LEVELS', {}, 'back');
+  }
+}
+
+function triggerViewportAnim(dir) {
+  const vp = document.getElementById('mainViewport');
+  if (!dir) return;
+  vp.classList.remove('anim-forward', 'anim-back');
+  void vp.offsetWidth;
+  vp.classList.add(dir === 'back' ? 'anim-back' : 'anim-forward');
+  vp.scrollTop = 0;
+}
+
+function render(dir = null) {
+  const btnBack = document.getElementById('btnBack');
+  const titleEl = document.getElementById('screenTitle');
+  const subBar = document.getElementById('subBar');
+  const vp = document.getElementById('mainViewport');
+
+  subBar.style.display = 'none';
+  subBar.innerHTML = '';
+
+  if (navState.screen === 'LEVELS') {
+    btnBack.style.display = 'none';
+    titleEl.textContent = 'CHỌN CẤP ĐỘ HSK';
+    renderLevelsScreen(vp);
+  }
+  else if (navState.screen === 'MODULES') {
+    btnBack.style.display = 'inline-block';
+    titleEl.textContent = `CHƯƠNG TRÌNH HSK ${navState.level}`;
+    renderModulesScreen(vp);
+  }
+  else if (navState.screen === 'TOPICS') {
+    btnBack.style.display = 'inline-block';
+    titleEl.textContent = `TỪ VỰNG HSK ${navState.level} THEO CHỦ ĐỀ`;
+    renderTopicsScreen(vp, subBar);
+  }
+  else if (navState.screen === 'VOCAB_DETAIL') {
+    btnBack.style.display = 'inline-block';
+    titleEl.textContent = `HSK ${navState.level} • ${navState.topic}`;
+    renderVocabDetailScreen(vp, subBar);
+  }
+  else if (navState.screen === 'GRAMMAR') {
+    btnBack.style.display = 'inline-block';
+    titleEl.textContent = `NGỮ PHÁP TRỌNG TÂM HSK ${navState.level}`;
+    renderGrammarScreen(vp);
+  }
+  else if (navState.screen === 'SENTENCES') {
+    btnBack.style.display = 'inline-block';
+    titleEl.textContent = `30 MẪU CÂU GIAO TIẾP HSK ${navState.level}`;
+    renderSentencesScreen(vp, subBar);
+  }
+  else if (navState.screen === 'ROADMAP') {
+    btnBack.style.display = 'inline-block';
+    titleEl.textContent = `LỘ TRÌNH & MẸO THI HSK ${navState.level}`;
+    renderRoadmapScreen(vp);
+  }
+
+  triggerViewportAnim(dir);
+}
+
+// ================= MÀN HÌNH 1: DANH SÁCH CẤP ĐỘ =================
+function renderLevelsScreen(vp) {
+  let html = '';
+  [1, 2, 3, 4].forEach((lvl, idx) => {
+    const meta = HSK_META[lvl];
+    const vList = db.vocab.filter(x => x.level === lvl);
+    const done = vList.filter(x => learned[`v_${lvl}_${x.hanzi}`]).length;
+    const pct = vList.length ? Math.round((done / vList.length) * 100) : 0;
+    html += `
+      <div class="nav-card stagger-item" style="--i:${idx}" onclick="navigateTo('MODULES', {level:${lvl}}, 'forward')">
+        <div class="nav-card-left">
+          <div class="lvl-badge">
+            <span>HSK ${lvl}</span>
+            <span class="zh">${meta.zh}</span>
+          </div>
+          <div>
+            <div class="nav-title">${meta.name} — ${meta.subtitle}</div>
+            <div class="nav-sub">${meta.desc}</div>
+          </div>
+        </div>
+        <div class="arrow-box">
+          <div class="prog-wrap">
+            <span class="count-pill">${done}/${vList.length}</span>
+            <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+          </div>
+          <span class="arrow-icon">→</span>
+        </div>
+      </div>
+    `;
+  });
+  vp.innerHTML = html;
+}
+
+// ================= MÀN HÌNH 2: CHỌN CHƯƠNG TRÌNH HỌC =================
+function renderModulesScreen(vp) {
+  const lvl = navState.level;
+  const vList = db.vocab.filter(x => x.level === lvl);
+  const topics = [...new Set(vList.map(x => x.topic))];
+  const gList = db.grammar.filter(x => x.level === lvl);
+  const sList = db.sentences.filter(x => x.level === lvl);
+  const meta = HSK_META[lvl];
+
+  const cards = [
+    {
+      bg: "linear-gradient(135deg, #2563eb, #1d4ed8)", icon: "📚",
+      title: "1. Từ vựng theo chủ đề",
+      sub: `Chia thành ${topics.length} chủ đề riêng biệt (${vList.length} từ đang có)`,
+      action: "navigateTo('TOPICS', {search:''}, 'forward')"
+    },
+    {
+      bg: "linear-gradient(135deg, #d97706, #b45309)", icon: "📐",
+      title: "2. Ngữ pháp trọng tâm",
+      sub: `Đầy đủ công thức, ví dụ và giải thích (${gList.length} chủ điểm)`,
+      action: "navigateTo('GRAMMAR', {}, 'forward')"
+    },
+    {
+      bg: "linear-gradient(135deg, #059669, #047857)", icon: "💬",
+      title: "3. Mẫu câu giao tiếp",
+      sub: `Các câu giao tiếp & viết trọng tâm (${sList.length} câu mẫu)`,
+      action: "navigateTo('SENTENCES', {mode:'list'}, 'forward')"
+    },
+    {
+      bg: "linear-gradient(135deg, #7c3aed, #6d28d9)", icon: "🗺️",
+      title: "4. Lộ trình học & Mẹo làm bài thi",
+      sub: meta.exam,
+      action: "navigateTo('ROADMAP', {}, 'forward')"
+    }
+  ];
+
+  vp.innerHTML = cards.map((c, i) => `
+    <div class="nav-card stagger-item" style="--i:${i}" onclick="${c.action}">
+      <div class="nav-card-left">
+        <div class="lvl-badge" style="background:${c.bg}; font-size:1.35rem;">${c.icon}</div>
+        <div>
+          <div class="nav-title">${c.title}</div>
+          <div class="nav-sub">${c.sub}</div>
+        </div>
+      </div>
+      <div class="arrow-box"><span class="arrow-icon">→</span></div>
+    </div>
+  `).join('');
+}
+
+// ================= MÀN HÌNH 3: DANH SÁCH CHỦ ĐỀ TỪ VỰNG =================
+function renderTopicsScreen(vp, subBar) {
+  const lvl = navState.level;
+  subBar.style.display = 'flex';
+  subBar.innerHTML = `
+    <input type="text" class="search-input" placeholder="🔍 Tìm nhanh Hán tự, Pinyin, nghĩa trong HSK ${lvl}..."
+      value="${navState.search}" oninput="navState.search=this.value; renderTopicsBody()">
+  `;
+  renderTopicsBody();
+}
+
+function renderTopicsBody() {
+  const vp = document.getElementById('mainViewport');
+  const lvl = navState.level;
+  const vList = db.vocab.filter(x => x.level === lvl);
+
+  if (navState.search.trim()) {
+    const q = navState.search.trim().toLowerCase();
+    const matched = vList.filter(x =>
+      x.hanzi.includes(q) || x.pinyin.toLowerCase().includes(q) || x.meaning.toLowerCase().includes(q)
+    );
+    vp.innerHTML = matched.length ? matched.map((v, i) => renderVocabRowHTML(v, i)).join('') :
+      `<div style="text-align:center; color:var(--muted); padding:30px;">Không tìm thấy từ phù hợp.</div>`;
+    return;
+  }
+
+  const topics = [...new Set(vList.map(x => x.topic))];
+  vp.innerHTML = topics.map((t, idx) => {
+    const items = vList.filter(x => x.topic === t);
+    const done = items.filter(x => learned[`v_${lvl}_${x.hanzi}`]).length;
+    const pct = items.length ? Math.round((done / items.length) * 100) : 0;
+    return `
+      <div class="nav-card stagger-item" style="--i:${idx}" onclick="openTopicDetail('${t.replace(/'/g, "\\'")}')">
+        <div class="nav-card-left">
+          <div>
+            <div class="nav-title">${t}</div>
+            <div class="nav-sub">Chủ đề từ vựng HSK ${lvl}</div>
+          </div>
+        </div>
+        <div class="arrow-box">
+          <div class="prog-wrap">
+            <span class="count-pill">${done}/${items.length} từ</span>
+            <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+          </div>
+          <span class="arrow-icon">→</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openTopicDetail(topicName) {
+  navigateTo('VOCAB_DETAIL', {
+    topic: topicName,
+    mode: 'list',
+    fcIndex: 0,
+    fcFlipped: false
+  }, 'forward');
+}
+
+// ================= MÀN HÌNH 4A: CHI TIẾT TỪ VỰNG TRONG CHỦ ĐỀ =================
+function renderVocabDetailScreen(vp, subBar) {
+  const items = db.vocab.filter(x => x.level === navState.level && x.topic === navState.topic);
+
+  subBar.style.display = 'flex';
+  subBar.innerHTML = `
+    <div style="display:flex; gap:6px;">
+      <button class="btn ${navState.mode==='list'?'active':''}" onclick="switchSubMode('list')">📋 Danh sách (${items.length})</button>
+      <button class="btn ${navState.mode==='flashcard'?'active':''}" onclick="switchSubMode('flashcard')">🎴 Lật thẻ 3D</button>
+      <button class="btn ${navState.mode==='quiz'?'active':''}" onclick="switchSubMode('quiz')">🎯 Trắc nghiệm</button>
+    </div>
+    <div style="display:flex; gap:6px;">
+      <button class="btn" onclick="navState.showPinyin=!navState.showPinyin; render()">
+        ${navState.showPinyin ? '👁️ Pinyin' : '🙈 Pinyin'}
+      </button>
+      <button class="btn" onclick="navState.showMeaning=!navState.showMeaning; render()">
+        ${navState.showMeaning ? '👁️ Nghĩa' : '🙈 Nghĩa'}
+      </button>
+    </div>
+  `;
+
+  if (navState.mode === 'list') {
+    vp.innerHTML = items.map((v, i) => renderVocabRowHTML(v, i)).join('');
+  }
+  else if (navState.mode === 'flashcard') {
+    if (navState.fcIndex >= items.length) navState.fcIndex = 0;
+    const cur = items[navState.fcIndex];
+    const key = `v_${cur.level}_${cur.hanzi}`;
+    const isDone = !!learned[key];
+    vp.innerHTML = `
+      <div class="fc-container stagger-item">
+        <div style="color:var(--muted); font-size:0.85rem;">Từ <b>${navState.fcIndex + 1} / ${items.length}</b> (${cur.topic})</div>
+        <div class="fc-scene" id="fcScene" onclick="flip3DCard()">
+          <div class="fc-card-3d ${navState.fcFlipped ? 'is-flipped' : ''}" id="fcCard3D">
+            <div class="fc-face fc-face-front">
+              <div class="fc-zh kaiti">${cur.hanzi}</div>
+              <div class="fc-hint">👆 Chạm vào thẻ để xoay 3D xem Pinyin & Nghĩa</div>
+            </div>
+            <div class="fc-face fc-face-back">
+              <div class="fc-zh kaiti" style="font-size:2.9rem;">${cur.hanzi}</div>
+              <div class="fc-py">${cur.pinyin}</div>
+              <div class="fc-vi">${cur.meaning}</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
+          <button class="btn" onclick="stepFlashcard(-1, ${items.length})">⬅ Trước</button>
+          <button class="btn btn-accent" onclick="speak('${cur.hanzi}', this)">🔊 Đọc</button>
+          <button class="btn ${isDone?'btn-success':''}" onclick="toggleMark('${key}', this)">${isDone?'✓ Đã thuộc':'Đánh dấu'}</button>
+          <button class="btn btn-primary" onclick="stepFlashcard(1, ${items.length})">Tiếp ➡</button>
+        </div>
+      </div>
+    `;
+  }
+  else if (navState.mode === 'quiz') {
+    const pool = db.vocab.filter(x => x.level === navState.level);
+    const target = items[Math.floor(Math.random() * items.length)];
+    const distractors = pool.filter(x => x.hanzi !== target.hanzi).sort(() => 0.5 - Math.random()).slice(0, 3);
+    const opts = [target, ...distractors].sort(() => 0.5 - Math.random());
+    vp.innerHTML = `
+      <div class="fc-container stagger-item">
+        <div class="fc-face" style="position:relative; width:100%; max-width:460px; min-height:175px;">
+          <div class="fc-zh kaiti" style="font-size:3.2rem;">${target.hanzi}</div>
+          <div class="fc-py">${target.pinyin}</div>
+          <button class="btn" style="margin-top:6px;" onclick="speak('${target.hanzi}', this)">🔊 Nghe</button>
+        </div>
+        <div style="width:100%; max-width:460px; display:grid; gap:8px;">
+          ${opts.map((o, idx) => `
+            <button class="btn stagger-item" style="--i:${idx}; padding:13px; justify-content:center; font-size:0.92rem;"
+              onclick="handleQuizChoice(this, ${o.hanzi===target.hanzi}, '${target.hanzi}')">
+              ${o.meaning}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+}
+
+function switchSubMode(m) {
+  navState.mode = m;
+  navState.fcFlipped = false;
+  render('forward');
+}
+
+// Lật thẻ 3D trực tiếp trên DOM (không vẽ lại toàn trang nên cực mượt)
+function flip3DCard() {
+  navState.fcFlipped = !navState.fcFlipped;
+  const card = document.getElementById('fcCard3D');
+  if (card) card.classList.toggle('is-flipped', navState.fcFlipped);
+}
+
+function stepFlashcard(delta, total) {
+  navState.fcIndex = (navState.fcIndex + delta + total) % total;
+  navState.fcFlipped = false;
+  render(delta > 0 ? 'forward' : 'back');
+}
+
+function renderVocabRowHTML(v, idx = 0) {
+  const key = `v_${v.level}_${v.hanzi}`;
+  const isDone = !!learned[key];
+  const delayIdx = Math.min(idx, 18);
+  return `
+    <div class="item-row stagger-item ${isDone ? 'learned' : ''}" style="--i:${delayIdx}" id="row_${key}">
+      <div class="row-main">
+        <span class="row-stt">${v.stt}.</span>
+        <span class="row-hanzi kaiti" onclick="speak('${v.hanzi}')" title="Chạm để nghe">${v.hanzi}</span>
+        ${navState.showPinyin ? `<span class="row-pinyin">${v.pinyin}</span>` : ''}
+        ${navState.showMeaning ? `<span class="row-meaning">— ${v.meaning}</span>` : ''}
+      </div>
+      <div class="row-actions">
+        <button class="btn" onclick="speak('${v.hanzi}', this)">🔊</button>
+        <button class="btn ${isDone ? 'btn-success' : ''}" onclick="toggleMark('${key}', this)">${isDone ? '✓' : '○'}</button>
+      </div>
+    </div>
+  `;
+}
+
+function handleQuizChoice(btn, correct, hanzi) {
+  speak(hanzi);
+  if (correct) {
+    btn.classList.add('btn-success', 'pop-anim');
+    setTimeout(() => render('forward'), 520);
+  } else {
+    btn.classList.add('btn-primary', 'shake-anim');
+  }
+}
+
+// Đánh dấu thuộc ngay trên phần tử mà không giật lại toàn bộ danh sách
+function toggleMark(key, btnEl) {
+  const nowLearned = !learned[key];
+  if (nowLearned) learned[key] = true;
+  else delete learned[key];
+  saveDB();
+
+  if (btnEl) {
+    btnEl.classList.remove('pop-anim');
+    void btnEl.offsetWidth;
+    btnEl.classList.add('pop-anim');
+    btnEl.classList.toggle('btn-success', nowLearned);
+    if (btnEl.textContent === '✓' || btnEl.textContent === '○') {
+      btnEl.textContent = nowLearned ? '✓' : '○';
+    } else {
+      btnEl.textContent = nowLearned ? '✓ Đã thuộc' : 'Đánh dấu';
+    }
+    const row = btnEl.closest('.item-row');
+    if (row) row.classList.toggle('learned', nowLearned);
+  } else {
+    render();
+  }
+}
+
+// ================= MÀN HÌNH 4B: NGỮ PHÁP TRỌNG TÂM (TRƯỢT MƯỢT) =================
+function renderGrammarScreen(vp) {
+  const list = db.grammar.filter(x => x.level === navState.level);
+  vp.innerHTML = list.map((g, idx) => {
+    const isOpen = navState.openAccId === g.id;
+    return `
+      <div class="acc-item stagger-item ${isOpen ? 'open' : ''}" style="--i:${Math.min(idx,15)}" id="acc_${g.id}">
+        <div class="acc-header" onclick="toggleAccordion('${g.id}')">
+          <span><b style="color:var(--accent);">${g.id}</b> — ${g.title}</span>
+          <span class="acc-chevron">▼</span>
+        </div>
+        <div class="acc-grid">
+          <div class="acc-inner">
+            <div class="acc-body">
+              <div class="formula-box">Công thức: <span class="kaiti" style="font-size:1.12rem;">${g.formula}</span></div>
+              <div style="margin-bottom:8px; line-height:1.5;">
+                <b>Ví dụ:</b> <span class="kaiti" style="font-size:1.18rem; color:#fff;">${g.example}</span>
+              </div>
+              <div style="color:var(--muted); line-height:1.45;">
+                <b>Giải thích:</b> ${g.explanation}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleAccordion(id) {
+  const el = document.getElementById('acc_' + id);
+  if (!el) return;
+  const isOpen = el.classList.contains('open');
+  document.querySelectorAll('.acc-item').forEach(x => x.classList.remove('open'));
+  if (!isOpen) {
+    el.classList.add('open');
+    navState.openAccId = id;
+  } else {
+    navState.openAccId = '';
+  }
+}
+
+// ================= MÀN HÌNH 4C: 30 MẪU CÂU GIAO TIẾP (KHÔNG CHUNKING) =================
+function renderSentencesScreen(vp, subBar) {
+  const list = db.sentences.filter(x => x.level === navState.level);
+
+  subBar.style.display = 'flex';
+  subBar.innerHTML = `
+    <div style="display:flex; gap:6px;">
+      <button class="btn ${navState.mode==='list'?'active':''}" onclick="switchSubMode('list')">📋 Danh sách (${list.length})</button>
+      <button class="btn ${navState.mode==='flashcard'?'active':''}" onclick="navState.fcIndex=0; switchSubMode('flashcard')">🎴 Lật thẻ 3D</button>
+    </div>
+    <div style="display:flex; gap:6px;">
+      <button class="btn" onclick="navState.showPinyin=!navState.showPinyin; render()">
+        ${navState.showPinyin ? '👁️ Pinyin' : '🙈 Pinyin'}
+      </button>
+      <button class="btn" onclick="navState.showMeaning=!navState.showMeaning; render()">
+        ${navState.showMeaning ? '👁️ Nghĩa' : '🙈 Nghĩa'}
+      </button>
+    </div>
+  `;
+
+  if (navState.mode === 'list') {
+    vp.innerHTML = list.map((s, idx) => {
+      const key = `s_${s.level}_${s.stt}`;
+      const isDone = !!learned[key];
+      return `
+        <div class="item-row stagger-item ${isDone ? 'learned' : ''}" style="--i:${Math.min(idx,18)}; align-items:flex-start;">
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:baseline; gap:8px;">
+              <span class="row-stt">${s.stt}.</span>
+              <span class="kaiti row-hanzi" style="font-size:1.5rem;" onclick="speak('${s.hanzi}')">${s.hanzi}</span>
+            </div>
+            ${navState.showPinyin ? `<div class="row-pinyin" style="margin-top:3px;">${s.pinyin}</div>` : ''}
+            ${navState.showMeaning ? `<div class="row-meaning" style="margin-top:2px;">${s.meaning}</div>` : ''}
+          </div>
+          <div class="row-actions" style="margin-top:2px;">
+            <button class="btn" onclick="speak('${s.hanzi}', this)">🔊</button>
+            <button class="btn ${isDone ? 'btn-success' : ''}" onclick="toggleMark('${key}', this)">${isDone ? '✓' : '○'}</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    if (navState.fcIndex >= list.length) navState.fcIndex = 0;
+    const cur = list[navState.fcIndex];
+    const key = `s_${cur.level}_${cur.stt}`;
+    const isDone = !!learned[key];
+    vp.innerHTML = `
+      <div class="fc-container stagger-item">
+        <div style="color:var(--muted); font-size:0.85rem;">Câu mẫu <b>#${cur.stt} (${navState.fcIndex + 1}/${list.length})</b></div>
+        <div class="fc-scene" onclick="flip3DCard()">
+          <div class="fc-card-3d ${navState.fcFlipped ? 'is-flipped' : ''}" id="fcCard3D">
+            <div class="fc-face fc-face-front">
+              <div class="kaiti" style="font-size:2.15rem; color:#fff; line-height:1.35;">${cur.hanzi}</div>
+              <div class="fc-hint">👆 Chạm để xoay 3D xem Pinyin & Nghĩa</div>
+            </div>
+            <div class="fc-face fc-face-back">
+              <div class="kaiti" style="font-size:1.75rem; color:#fff; margin-bottom:10px; line-height:1.3;">${cur.hanzi}</div>
+              <div class="fc-py" style="font-size:1.1rem;">${cur.pinyin}</div>
+              <div class="fc-vi" style="font-size:0.98rem;">${cur.meaning}</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
+          <button class="btn" onclick="stepFlashcard(-1, ${list.length})">⬅ Trước</button>
+          <button class="btn btn-accent" onclick="speak('${cur.hanzi}', this)">🔊 Đọc câu</button>
+          <button class="btn ${isDone?'btn-success':''}" onclick="toggleMark('${key}', this)">${isDone?'✓ Đã thuộc':'Đánh dấu'}</button>
+          <button class="btn btn-primary" onclick="stepFlashcard(1, ${list.length})">Tiếp ➡</button>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// ================= MÀN HÌNH 4D: LỘ TRÌNH HỌC & MẸO THI =================
+function renderRoadmapScreen(vp) {
+  const meta = HSK_META[navState.level];
+  let html = `
+    <div class="acc-item open stagger-item" style="--i:0" id="acc_exam">
+      <div class="acc-header" onclick="this.parentElement.classList.toggle('open')">
+        <span>🎯 Cấu trúc đề thi & Điều kiện đạt ${meta.name}</span>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-grid"><div class="acc-inner"><div class="acc-body">${meta.exam}</div></div></div>
+    </div>
+    <div class="acc-item open stagger-item" style="--i:1" id="acc_tips">
+      <div class="acc-header" onclick="this.parentElement.classList.toggle('open')">
+        <span>💡 Mẹo học & Làm bài thi ${meta.name}</span>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-grid"><div class="acc-inner"><div class="acc-body">${meta.tips}</div></div></div>
+    </div>
+  `;
+  meta.weeks.forEach((item, idx) => {
+    html += `
+      <div class="acc-item open stagger-item" style="--i:${idx + 2}">
+        <div class="acc-header" style="color:var(--accent);" onclick="this.parentElement.classList.toggle('open')">
+          <span>${item.w}</span>
+          <span class="acc-chevron">▼</span>
+        </div>
+        <div class="acc-grid"><div class="acc-inner"><div class="acc-body" style="line-height:1.5;">${item.d}</div></div></div>
+      </div>
+    `;
+  });
+  vp.innerHTML = html;
+}
+
+// ================= BỘ PHÂN TÍCH TỰ ĐỘNG 87 TRANG PDF =================
+function openModal() { document.getElementById('importModal').classList.add('show'); }
+function closeModal() { document.getElementById('importModal').classList.remove('show'); }
+
+function parsePDFContent() {
+  const raw = document.getElementById('pdfInput').value;
+  if (!raw || raw.trim().length < 100) {
+    alert("Hãy dán nội dung Ctrl+A từ file PDF vào ô trống!");
+    return;
+  }
+
+  const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  let curLevel = 1;
+  let section = '';
+  let curTopic = '3.1 Chủ đề';
+
+  const vocabOut = [];
+  const grammarOut = [];
+  const sentBlocks = { 1: [], 2: [], 3: [], 4: [] };
+
+  const topicRe = /^(3\.\d+\s+.+?)\s*\(\d+.*?\)$/;
+  const vocabRe = /^(\d+)\s+([\u4e00-\u9fff]+)\s+([a-zA-ZāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüĀÁǍÀĒÉĚÈĪÍǏÌŌÓǑÒŪÚǓÙǕǗǙǛÜ'\s]+?)\s+(.+)$/;
+  const grammarRe = /^4\.(\d+)\s+(.+)$/;
+
+  let curG = null;
+  let gField = '';
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (/PHẦN 1|Từ vựng HSK 1/i.test(line) && /HSK 1/i.test(line)) curLevel = 1;
+    if (/PHẦN 2|Từ vựng HSK 2/i.test(line) && /HSK 2/i.test(line)) curLevel = 2;
+    if (/PHẦN 3|Từ vựng HSK 3/i.test(line) && /HSK 3/i.test(line)) curLevel = 3;
+    if (/PHẦN 4|Từ vựng HSK 4/i.test(line) && /HSK 4/i.test(line)) curLevel = 4;
+
+    if (/^Chương 3\s*[—\-–]?\s*Từ vựng HSK (\d)/i.test(line)) {
+      curLevel = parseInt(line.match(/HSK (\d)/i)[1]);
+      section = 'vocab';
+      continue;
+    }
+    if (/^Chương 4\s*[—\-–]?\s*Ngữ pháp trọng tâm HSK (\d)/i.test(line)) {
+      if (curG) { grammarOut.push(curG); curG = null; }
+      curLevel = parseInt(line.match(/HSK (\d)/i)[1]);
+      section = 'grammar';
+      continue;
+    }
+    if (/^Chương 5\s*[—\-–]?\s*30 câu mẫu/i.test(line)) {
+      if (curG) { grammarOut.push(curG); curG = null; }
+      section = 'sentences';
+      continue;
+    }
+    if (/^Chương 6\s*[—\-–]?\s*Mẹo học/i.test(line)) {
+      section = 'other';
+      continue;
+    }
+
+    if (section === 'vocab') {
+      const mt = line.match(topicRe);
+      if (mt) { curTopic = mt[1].trim(); continue; }
+      const mv = line.match(vocabRe);
+      if (mv) {
+        let meaning = mv[4].trim();
+        while (i + 1 < lines.length) {
+          const nxt = lines[i + 1];
+          if (!/^\d+\s+[\u4e00-\u9fff]/.test(nxt) && !topicRe.test(nxt) && !nxt.startsWith('STT ') && !nxt.startsWith('Chương ')) {
+            meaning += ' ' + nxt;
+            i++;
+          } else break;
+        }
+        vocabOut.push({
+          level: curLevel,
+          topic: curTopic,
+          stt: parseInt(mv[1]),
+          hanzi: mv[2].trim(),
+          pinyin: mv[3].trim(),
+          meaning: meaning
+        });
+      }
+    }
+    else if (section === 'grammar') {
+      const mg = line.match(grammarRe);
+      if (mg) {
+        if (curG) grammarOut.push(curG);
+        curG = { level: curLevel, id: '4.' + mg[1], title: mg[2].trim(), formula: '', example: '', explanation: '' };
+        gField = '';
+      } else if (curG) {
+        if (line.startsWith('Công thức:')) { curG.formula = line.replace('Công thức:', '').trim(); gField = 'formula'; }
+        else if (line.startsWith('Ví dụ:')) { curG.example = line.replace('Ví dụ:', '').trim(); gField = 'example'; }
+        else if (line.startsWith('Giải thích:')) { curG.explanation = line.replace('Giải thích:', '').trim(); gField = 'explanation'; }
+        else if (gField) { curG[gField] += ' ' + line; }
+      }
+    }
+    else if (section === 'sentences') {
+      if (line.startsWith('STT ') || line.startsWith('Học thuộc') || line.startsWith('và cả') || line.startsWith('30 câu') || line.startsWith('tiếng Việt') || line.startsWith('pinyin')) continue;
+      sentBlocks[curLevel].push(line);
+    }
+  }
+  if (curG) grammarOut.push(curG);
+
+  const sentencesOut = [];
+  [1, 2, 3, 4].forEach(lvl => {
+    const joined = sentBlocks[lvl].join('\n');
+    const parts = joined.split(/(?m)^(\d+)\s+(?=[\u4e00-\u9fff])/);
+    for (let k = 1; k < parts.length; k += 2) {
+      const stt = parseInt(parts[k]);
+      const block = parts[k + 1].replace(/\s+/g, ' ').trim();
+      const m = block.match(/^([\u4e00-\u9fff，。！？：、\s]+?)\s+([A-Za-z].*)$/);
+      if (m) {
+        const hanzi = m[1].replace(/\s+/g, '');
+        const rest = m[2];
+        const endCount = Math.max(1, (hanzi.match(/[。！？]/g) || []).length);
+        const punctRegex = /[\.\!\?]\s+/g;
+        let match, count = 0, splitIdx = -1;
+        while ((match = punctRegex.exec(rest)) !== null) {
+          count++;
+          if (count === endCount) { splitIdx = punctRegex.lastIndex; break; }
+        }
+        const pinyin = splitIdx !== -1 ? rest.slice(0, splitIdx).trim() : rest;
+        const meaning = splitIdx !== -1 ? rest.slice(splitIdx).trim() : '';
+        sentencesOut.push({ level: lvl, stt, hanzi, pinyin, meaning });
+      }
+    }
+  });
+
+  if (vocabOut.length > 0) db.vocab = vocabOut;
+  if (grammarOut.length > 0) db.grammar = grammarOut;
+  if (sentencesOut.length > 0) db.sentences = sentencesOut;
+
+  saveDB();
+  render('forward');
+  document.getElementById('importMsg').textContent =
+    `✅ Đã nạp thành công: ${db.vocab.length} Từ vựng, ${db.grammar.length} Ngữ pháp và ${db.sentences.length} Câu mẫu!`;
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'hsk_1_4_full_database.json';
+  a.click();
+}
+
+function importJSON(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try {
+      const parsed = JSON.parse(evt.target.result);
+      if (parsed.vocab) {
+        db = parsed;
+        saveDB();
+        render('forward');
+        closeModal();
+      }
+    } catch (err) { alert("File JSON không hợp lệ!"); }
+  };
+  reader.readAsText(file);
+}
+
+render('forward');
+</script>
+</body>
+</html>
